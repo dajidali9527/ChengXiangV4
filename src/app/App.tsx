@@ -12,6 +12,8 @@ import { MapPage } from "./components/MapPage";
 import { CommunityPage } from "./components/CommunityPage";
 import { DigitalAvatarPage } from "./components/DigitalAvatarPage";
 import { AdminPage } from "./components/AdminPage";
+import { SettingsPage } from "./components/SettingsPage";
+import { PointsPage } from "./components/PointsPage";
 
 type AuthPage = "login" | "register";
 type MainTab = "discover" | "explore" | "community" | "chat" | "my";
@@ -19,7 +21,11 @@ type SubPage =
   | "none"
   | "tags"
   | "digital-avatar"
-  | "admin";
+  | "admin"
+  | "settings"
+  | "points"
+  | "points-detail"
+  | "account";
 
 function MainApp() {
   const { currentUser, logout } = useApp();
@@ -27,6 +33,9 @@ function MainApp() {
   const [mainTab, setMainTab] = useState<MainTab>("discover");
   const [subPage, setSubPage] = useState<SubPage>("none");
   const [showPublish, setShowPublish] = useState(false);
+  const [hideBottomNav, setHideBottomNav] = useState(false);
+
+  const goBack = () => setSubPage("none");
 
   if (!currentUser) {
     if (authPage === "login") {
@@ -46,13 +55,33 @@ function MainApp() {
   }
 
   if (subPage === "tags") {
-    return <TagsPage onBack={() => setSubPage("none")} />;
+    return <TagsPage onBack={goBack} />;
   }
   if (subPage === "digital-avatar") {
-    return <DigitalAvatarPage onBack={() => setSubPage("none")} />;
+    return <DigitalAvatarPage onBack={goBack} />;
   }
   if (subPage === "admin") {
-    return <AdminPage onBack={() => setSubPage("none")} />;
+    return <AdminPage onBack={goBack} />;
+  }
+  if (subPage === "settings") {
+    return (
+      <SettingsPage
+        onBack={goBack}
+        onAdminOpen={() => setSubPage("admin")}
+        onAccountOpen={() => setSubPage("account")}
+        onPointsDetailOpen={() => setSubPage("points-detail")}
+        onLogout={logout}
+      />
+    );
+  }
+  if (subPage === "points") {
+    return <PointsPage onBack={goBack} onPointsDetailOpen={() => setSubPage("points-detail")} />;
+  }
+  if (subPage === "points-detail") {
+    return <PointsPage onBack={goBack} onPointsDetailOpen={goBack} />;
+  }
+  if (subPage === "account") {
+    return <TagsPage onBack={goBack} />;
   }
 
   return (
@@ -61,23 +90,22 @@ function MainApp() {
         {mainTab === "discover" && <DiscoverPage />}
         {mainTab === "explore" && <MapPage />}
         {mainTab === "community" && <CommunityPage />}
-        {mainTab === "chat" && <ChatPage />}
+        {mainTab === "chat" && <ChatPage onToggleBottomNav={setHideBottomNav} />}
         {mainTab === "my" && (
           <MyPage
             onTagsOpen={() => setSubPage("tags")}
             onAvatarOpen={() => setSubPage("digital-avatar")}
-            onMapOpen={() => setMainTab("explore")}
-            onAdminOpen={() => setSubPage("admin")}
-            onLogout={logout}
+            onSettingsOpen={() => setSubPage("settings")}
+            onPointsOpen={() => setSubPage("points")}
           />
         )}
       </div>
 
-      <BottomNav
+      {!hideBottomNav && <BottomNav
         current={mainTab}
         onChange={setMainTab}
         onPublish={() => setShowPublish(true)}
-      />
+      />}
 
       {showPublish && (
         <PublishPage onClose={() => setShowPublish(false)} />

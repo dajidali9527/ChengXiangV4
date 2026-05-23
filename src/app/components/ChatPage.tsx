@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Send, Bot, MoreHorizontal, Phone } from "lucide-react";
+import { useApp } from "../store/AppContext";
+import type { DemoUser } from "../data/users";
 
 interface Conversation {
   id: number;
@@ -28,6 +30,160 @@ interface Message {
   time: string;
 }
 
+const ACTIVITY_RECOMMENDATIONS = [
+  {
+    title: "峨眉山深度徒步7日",
+    emoji: "🧗",
+    community: "山野探索队",
+    tags: ["徒步", "露营"],
+    date: "6月20日",
+    price: "¥2,380",
+    quota: "余4位",
+    matchTags: ["徒步", "露营", "骑行", "摄影", "旅行"],
+  },
+  {
+    title: "数字游民共居周",
+    emoji: "🏘️",
+    community: "竹林数字村",
+    tags: ["共居", "远程办公"],
+    date: "6月15日",
+    price: "¥1,280",
+    quota: "余3位",
+    matchTags: ["数字游民", "自由职业", "远程办公", "AI", "软件"],
+  },
+  {
+    title: "有机农夫市集·夏日场",
+    emoji: "🌾",
+    community: "有机农夫市集",
+    tags: ["市集", "有机"],
+    date: "6月16日",
+    price: "免费",
+    quota: "余12位",
+    matchTags: ["美食", "有机", "农人", "农业", "旅行"],
+  },
+  {
+    title: "阳朔山水摄影行",
+    emoji: "📷",
+    community: "漓江民宿联盟",
+    tags: ["摄影", "旅行"],
+    date: "6月25日",
+    price: "¥980",
+    quota: "余4位",
+    matchTags: ["摄影", "旅行", "民宿", "设计"],
+  },
+  {
+    title: "乡村创客沙龙",
+    emoji: "💡",
+    community: "竹林数字村",
+    tags: ["创业", "分享"],
+    date: "6月22日",
+    price: "免费",
+    quota: "余12位",
+    matchTags: ["创业者", "数字游民", "自由职业", "设计", "AI", "软件", "建筑"],
+  },
+  {
+    title: "民宿设计工作坊",
+    emoji: "🎨",
+    community: "漓江民宿联盟",
+    tags: ["设计", "美学"],
+    date: "7月5日",
+    price: "¥298",
+    quota: "余6位",
+    matchTags: ["设计", "建筑", "民宿", "乡建"],
+  },
+  {
+    title: "周末山野露营",
+    emoji: "⛺",
+    community: "山野探索队",
+    tags: ["露营", "星空"],
+    date: "6月28日",
+    price: "¥368",
+    quota: "余6位",
+    matchTags: ["露营", "徒步", "骑行", "摄影", "I人", "E人"],
+  },
+  {
+    title: "农场到餐桌体验",
+    emoji: "🍽️",
+    community: "有机农夫市集",
+    tags: ["美食", "体验"],
+    date: "6月30日",
+    price: "¥198",
+    quota: "余4位",
+    matchTags: ["美食", "农人", "有机", "旅行", "学生"],
+  },
+  {
+    title: "溯溪探险之旅",
+    emoji: "🏞️",
+    community: "山野探索队",
+    tags: ["溯溪", "探险"],
+    date: "7月15日",
+    price: "¥488",
+    quota: "余6位",
+    matchTags: ["徒步", "骑行", "露营", "E人", "90后", "00后"],
+  },
+  {
+    title: "有机种植工作坊",
+    emoji: "🌻",
+    community: "有机农夫市集",
+    tags: ["种植", "学习"],
+    date: "7月10日",
+    price: "¥128",
+    quota: "余5位",
+    matchTags: ["农人", "农业", "乡建", "学生", "创业者"],
+  },
+  {
+    title: "稻田插秧体验",
+    emoji: "🌱",
+    community: "竹林数字村",
+    tags: ["农耕", "体验"],
+    date: "7月1日",
+    price: "¥168",
+    quota: "余8位",
+    matchTags: ["农人", "美食", "旅行", "学生", "上班族"],
+  },
+  {
+    title: "高山日出摄影团",
+    emoji: "🌄",
+    community: "山野探索队",
+    tags: ["摄影", "日出"],
+    date: "7月8日",
+    price: "¥258",
+    quota: "余4位",
+    matchTags: ["摄影", "徒步", "旅行", "露营"],
+  },
+];
+
+function generateAIRecommendation(userInput: string, user: DemoUser | null): string {
+  if (!user) {
+    return "您好！我是您的城乡生活AI助手。请先登录，我就能根据您的标签为您推荐最合适的活动了！";
+  }
+
+  const allTags = [...user.identityTags, ...user.personalityTags];
+
+  const scored = ACTIVITY_RECOMMENDATIONS.map((act) => {
+    const matchCount = act.matchTags.filter((t) => allTags.includes(t)).length;
+    return { ...act, score: matchCount };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const top3 = scored.slice(0, 3);
+
+  const intro = `根据您的身份标签「${user.identityTags.join("、")}」、个性标签「${user.personalityTags.join("、")}」以及当前状态「${user.status}」，我为您匹配了以下活动：\n\n`;
+
+  const items = top3.map((act, i) => {
+    const matchReason = act.matchTags.filter((t) => allTags.includes(t)).slice(0, 2);
+    const reasonText = matchReason.length > 0 ? `（匹配：${matchReason.join("、")}）` : "";
+    return `${act.emoji} **${act.title}**\n📅 ${act.date} | 💰 ${act.price} | 👥 ${act.quota}\n🏘️ ${act.community} | 🏷️ ${act.tags.join(" · ")} ${reasonText}`;
+  }).join("\n\n");
+
+  const inputHint = userInput.trim()
+    ? `\n\n您提到「${userInput.slice(0, 30)}${userInput.length > 30 ? "..." : ""}」，以上推荐已结合您的兴趣方向进行筛选。点击活动卡片即可查看详情和报名！`
+    : "\n\n以上是根据您的标签智能匹配的活动，点击活动卡片即可查看详情和报名！";
+
+  return intro + items + inputHint;
+}
+
 const DEFAULT_MESSAGES: Message[] = [
   { id: 1, from: "other", text: "你好！周末来我农场看看？", time: "10:20" },
   { id: 2, from: "me", text: "好的！需要带什么吗？", time: "10:22" },
@@ -36,11 +192,45 @@ const DEFAULT_MESSAGES: Message[] = [
   { id: 5, from: "other", text: "当然可以，最多6个人，超过的话下周再安排 😄", time: "10:26" },
 ];
 
-export function ChatPage() {
+const AI_DEFAULT_MESSAGES: Message[] = [
+  { id: 1, from: "ai", text: "您好！我是您的城乡生活AI助手。我可以帮您推荐活动、匹配伙伴、介绍地点。有什么想了解的吗？", time: "刚刚" },
+  { id: 2, from: "me", text: "周末有空，想找个地方放松一下", time: "刚刚" },
+];
+
+function getAiWelcomeMessages(user: DemoUser | null): Message[] {
+  const baseMessages: Message[] = [
+    { id: 1, from: "ai", text: "您好！我是您的城乡生活AI助手。我可以帮您推荐活动、匹配伙伴、介绍地点。有什么想了解的吗？", time: "刚刚" },
+  ];
+  
+  if (!user) return baseMessages;
+  
+  const recommendation = generateAIRecommendation("周末有空，想找个地方放松一下", user);
+  return [
+    ...baseMessages,
+    { id: 2, from: "me", text: "周末有空，想找个地方放松一下", time: "刚刚" },
+    { id: 3, from: "ai", text: recommendation, time: "刚刚" },
+  ];
+}
+
+interface ChatPageProps {
+  onToggleBottomNav: (hide: boolean) => void;
+}
+
+export function ChatPage({ onToggleBottomNav }: ChatPageProps) {
+  const { currentUser } = useApp();
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>(DEFAULT_MESSAGES);
   const [input, setInput] = useState("");
   const [aiEnabled, setAiEnabled] = useState(false);
+
+  useEffect(() => {
+    if (selectedConv) {
+      onToggleBottomNav(true);
+    } else {
+      onToggleBottomNav(false);
+    }
+    return () => onToggleBottomNav(false);
+  }, [selectedConv, onToggleBottomNav]);
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -55,18 +245,13 @@ export function ChatPage() {
 
     if (selectedConv?.isAI || aiEnabled) {
       setTimeout(() => {
-        const aiReplies = [
-          "我理解您的想法！这片区域有很多适合您标签偏好的活动，需要我帮您推荐吗？",
-          "根据您的个人标签，附近有3个正在招募徒步伙伴的活动，要看看吗？",
-          "我已记录您的需求，正在为您匹配最合适的资源和人脉。",
-          "这个问题很好！您可以在发现页通过「农场」标签找到更多相关内容。",
-        ];
+        const aiReply = generateAIRecommendation(input, currentUser);
         setMessages((prev) => [
           ...prev,
           {
             id: prev.length + 1,
             from: "ai",
-            text: aiReplies[Math.floor(Math.random() * aiReplies.length)],
+            text: aiReply,
             time: new Date().toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
           },
         ]);
@@ -96,14 +281,9 @@ export function ChatPage() {
             </div>
             <p className="text-xs text-ds-text-subtle">{selectedConv.tag}</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="w-8 h-8 rounded-full bg-ds-chip flex items-center justify-center">
-              <Phone size={15} />
-            </button>
-            <button className="w-8 h-8 rounded-full bg-ds-chip flex items-center justify-center">
-              <MoreHorizontal size={15} />
-            </button>
-          </div>
+          <button className="w-8 h-8 rounded-full bg-ds-chip flex items-center justify-center">
+            <Phone size={15} />
+          </button>
         </div>
 
         {!selectedConv.isAI && (
@@ -179,12 +359,8 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col h-full bg-ds-bg">
-      <div className="bg-ds-surface px-5 pt-8 pb-4 shadow-ds-soft">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-ds-text">消息</h1>
-          <button className="w-8 h-8 rounded-full bg-ds-chip flex items-center justify-center">
-            <MoreHorizontal size={16} />
-          </button>
+      <div className="bg-ds-surface px-5 pt-3 pb-4 shadow-ds-soft">
+        <div className="flex items-center justify-end">
         </div>
       </div>
 
@@ -195,9 +371,7 @@ export function ChatPage() {
             onClick={() => {
               setSelectedConv(conv);
               if (conv.id === 1) {
-                setMessages([
-                  { id: 1, from: "ai", text: "您好！我是您的城乡生活AI助手。我可以帮您推荐活动、匹配伙伴、介绍地点。有什么想了解的吗？", time: "刚刚" },
-                ]);
+                setMessages(getAiWelcomeMessages(currentUser));
               } else {
                 setMessages(DEFAULT_MESSAGES);
               }

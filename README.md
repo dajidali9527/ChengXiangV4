@@ -65,19 +65,31 @@ App.tsx                       — 根组件，路由与底部导航
 │   ├── 社区                  — CommunityPage
 │   ├── 聊天                  — ChatPage
 │   └── 我的                  — MyPage
-├── DiscoverPage.tsx          — 主页（社区社交视图）
+├── DiscoverPage.tsx          — 主页（社区社交视图，无顶部标题Banner）
 │   ├── 未加入社区：用户大头像居中 + 标签信息
 │   └── 已加入社区：同社区成员头像随机分布 + 打招呼/查看主页
-├── MapPage.tsx               — 探索页（地图 + 浮动列表按钮切换内容流）
-├── CommunityPage.tsx         — 社区页（社区列表/标签网络）
-├── ChatPage.tsx              — 聊天页（会话列表/AI分身/聊天）
-├── PublishPage.tsx           — 发布页（图文/视频/外链/活动/打卡）弹窗
-├── MyPage.tsx                — 我的页（渐变头部/统计/标签/数字分身入口/退出登录）
+├── MapPage.tsx               — 探索页（地图/列表双模式，搜索栏与切换按钮并列，无顶部标题）
+├── CommunityPage.tsx         — 社区页（社区列表/标签网络，无顶部标题Banner）
+├── ChatPage.tsx              — 聊天页（会话列表/AI分身/聊天，无顶部标题Banner）
+├── PublishPage.tsx           — 发布页（动态/外链/活动/社区）弹窗；动态标签内整合图文、视频、打卡子类型
+├── MyPage.tsx                — 我的页（渐变头部/统计/标签/数字分身入口/积分入口）
 ├── LoginPage.tsx             — 登录页（演示用户快速选择 / 手机邮箱登录）
 ├── RegisterPage.tsx          — 注册页（多步骤）
 ├── TagsPage.tsx              — 标签管理页（子页面）
 ├── DigitalAvatarPage.tsx     — 数字分身配置页（子页面）
-└── AdminPage.tsx             — 管理后台（子页面）
+├── AdminPage.tsx             — 管理后台（子页面）
+├── SettingsPage.tsx          — 设置页（子页面）
+│   ├── 语言设置
+│   ├── 私信权限
+│   ├── 通知设置
+│   ├── 积分明细
+│   ├── 账号信息维护
+│   ├── 管理后台
+│   └── 退出登录
+└── PointsPage.tsx            — 积分页（子页面）
+    ├── 我的积分
+    ├── 文创产品兑换
+    └── 积分记录
 ```
 
 ## 演示用户数据

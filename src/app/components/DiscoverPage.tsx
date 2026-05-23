@@ -178,8 +178,7 @@ export function DiscoverPage() {
 
   return (
     <div className="flex flex-col h-full bg-ds-bg relative">
-      <div className="bg-ds-surface px-4 pt-8 pb-4 shadow-ds-soft">
-        <h1 className="text-xl font-bold text-ds-text">首页</h1>
+      <div className="bg-ds-surface px-4 pt-3 pb-4 shadow-ds-soft">
         {userCommunities.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
             {userCommunities.map((c, i) => (

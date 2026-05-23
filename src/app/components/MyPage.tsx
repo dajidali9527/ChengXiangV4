@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { QrCode, Settings, ChevronRight, MapPin, Grid3X3, Heart, Bookmark, Star, Users, LogOut } from "lucide-react";
+import { QrCode, Settings, ChevronRight, MapPin, Star, Gift } from "lucide-react";
 import { useApp } from "../store/AppContext";
 
 const STATUSES = [
@@ -23,12 +23,11 @@ const POSTS_GRID = [
 interface MyPageProps {
   onTagsOpen: () => void;
   onAvatarOpen: () => void;
-  onMapOpen: () => void;
-  onAdminOpen: () => void;
-  onLogout: () => void;
+  onSettingsOpen: () => void;
+  onPointsOpen: () => void;
 }
 
-export function MyPage({ onTagsOpen, onAvatarOpen, onMapOpen, onAdminOpen, onLogout }: MyPageProps) {
+export function MyPage({ onTagsOpen, onAvatarOpen, onSettingsOpen, onPointsOpen }: MyPageProps) {
   const { currentUser } = useApp();
   const [currentStatus, setCurrentStatus] = useState(0);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
@@ -58,7 +57,7 @@ export function MyPage({ onTagsOpen, onAvatarOpen, onMapOpen, onAdminOpen, onLog
               style={{ background: "rgba(0,0,0,0.2)" }}>
               <QrCode size={17} color="rgba(255,255,255,0.9)" />
             </button>
-            <button className="w-9 h-9 rounded-full flex items-center justify-center"
+            <button onClick={onSettingsOpen} className="w-9 h-9 rounded-full flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.2)" }}>
               <Settings size={17} color="rgba(255,255,255,0.9)" />
             </button>
@@ -149,12 +148,11 @@ export function MyPage({ onTagsOpen, onAvatarOpen, onMapOpen, onAdminOpen, onLog
         </div>
       </div>
 
-      <div className="px-4 mt-4 grid grid-cols-4 gap-3">
+      <div className="px-4 mt-4 grid grid-cols-3 gap-3">
         {[
           { icon: "🏷️", label: "我的标签", action: onTagsOpen },
           { icon: "🤖", label: "数字分身", action: onAvatarOpen },
-          { icon: "🗺️", label: "位置地图", action: onMapOpen },
-          { icon: "⚙️", label: "管理后台", action: onAdminOpen },
+          { icon: "⭐", label: "积分兑换", action: onPointsOpen },
         ].map(({ icon, label, action }) => (
           <button
             key={label}
@@ -167,35 +165,22 @@ export function MyPage({ onTagsOpen, onAvatarOpen, onMapOpen, onAdminOpen, onLog
         ))}
       </div>
 
-      <div className="px-4 mt-4 bg-ds-surface rounded-ds-lg shadow-ds-soft overflow-hidden">
-        {[
-          { icon: Star, label: "积分与兑换", sub: "340 积分可用" },
-          { icon: Users, label: "聊天权限", sub: "仅互关用户" },
-          { icon: Grid3X3, label: "多语言设置", sub: "简体中文" },
-        ].map(({ icon: Icon, label, sub }) => (
-          <button
-            key={label}
-            className="w-full flex items-center gap-3 px-4 py-3.5 border-b last:border-b-0 border-ds-border active:bg-ds-chip"
-          >
-            <div className="w-8 h-8 rounded-xl bg-ds-chip flex items-center justify-center">
-              <Icon size={16} className="text-ds-text-muted" />
-            </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-medium text-ds-text">{label}</p>
-              <p className="text-xs text-ds-text-subtle">{sub}</p>
-            </div>
-            <ChevronRight size={16} className="text-ds-text-subtle" />
-          </button>
-        ))}
-      </div>
-
-      <div className="px-4 mt-4">
+      <div className="px-4 mt-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-ds-lg border border-amber-200 overflow-hidden">
         <button
-          onClick={onLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-ds-surface rounded-ds-lg shadow-ds-soft active:bg-ds-chip text-ds-text-muted text-sm font-medium"
+          onClick={onPointsOpen}
+          className="w-full flex items-center gap-3 px-4 py-4 active:bg-amber-100"
         >
-          <LogOut size={16} />
-          退出登录
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+            <Gift size={24} className="text-white" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-semibold text-ds-text">我的积分</p>
+            <p className="text-lg font-bold text-orange-600 mt-1">340 <span className="text-xs font-normal text-orange-400">积分</span></p>
+          </div>
+          <div className="flex items-center gap-1 px-4 py-2 bg-orange-500 rounded-full text-white text-xs font-semibold">
+            去兑换
+            <ChevronRight size={14} />
+          </div>
         </button>
       </div>
 

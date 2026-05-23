@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { MapPin, Navigation, X, Users, Star, Map, List, Heart, MessageSquare, Share2, Bookmark, ChevronLeft, Calendar, Clock, UserPlus, Search } from "lucide-react";
+import { MapPin, X, Users, Star, Map, List, Heart, MessageSquare, Share2, Bookmark, ChevronLeft, Calendar, Clock, UserPlus, Search, ChevronRight } from "lucide-react";
 import { useApp } from "../store/AppContext";
 
 interface MapPageProps {
@@ -318,7 +318,8 @@ export function MapPage({ onBack }: MapPageProps) {
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [detailPost, setDetailPost] = useState<typeof POSTS[0] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 4;
   const filters = ["all", "farm", "homestay", "activity", "user", "community"];
 
   const userTags = useMemo(() => {
@@ -330,7 +331,7 @@ export function MapPage({ onBack }: MapPageProps) {
     ? MAP_POINTS
     : MAP_POINTS.filter((p) => p.type === activeFilter);
 
-  const filteredPosts = useMemo(() => {
+  const allFilteredPosts = useMemo(() => {
     let posts = POSTS;
     if (searchQuery.trim()) {
       const q = searchQuery.trim().toLowerCase();
@@ -342,12 +343,12 @@ export function MapPage({ onBack }: MapPageProps) {
       );
     }
     if (activeTag === "推荐") {
-      if (userTags.length === 0) return posts;
+      if (userTags.length === 0) return posts.slice(0, PAGE_SIZE);
       return [...posts].sort((a, b) => {
         const scoreA = a.tags.filter((t) => userTags.some((ut) => t.includes(ut) || ut.includes(t))).length;
         const scoreB = b.tags.filter((t) => userTags.some((ut) => t.includes(ut) || ut.includes(t))).length;
         return scoreB - scoreA;
-      });
+      }).slice(0, PAGE_SIZE);
     }
     return posts.filter((p) => {
       if (p.tags.some((t) => t.includes(activeTag))) return true;
@@ -355,6 +356,12 @@ export function MapPage({ onBack }: MapPageProps) {
       return false;
     });
   }, [activeTag, userTags, searchQuery]);
+  const totalPages = Math.ceil(allFilteredPosts.length / PAGE_SIZE);
+  const filteredPosts = useMemo(() => {
+    if (activeTag === "推荐") return allFilteredPosts;
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return allFilteredPosts.slice(start, start + PAGE_SIZE);
+  }, [allFilteredPosts, currentPage, activeTag]);
 
   const toggleLike = (id: number) =>
     setLikedPosts((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -366,13 +373,16 @@ export function MapPage({ onBack }: MapPageProps) {
   }, []);
 
   useEffect(() => {
-    if (!scriptLoaded || mapReady) return;
+    if (!scriptLoaded) return;
     const T = (window as any).T;
     if (!T || !mapContainerRef.current) return;
     const container = mapContainerRef.current;
+    
     const initMap = () => {
-      if (container.offsetWidth === 0 || container.offsetHeight === 0 || mapRef.current) return;
+      if (container.offsetWidth === 0 || container.offsetHeight === 0) return;
       try {
+        // 清除可能存在的旧地图
+        container.innerHTML = '';
         const map = new T.Map(container);
         map.centerAndZoom(new T.LngLat(104.0, 35.5), 5);
         map.enableScrollWheelZoom();
@@ -382,11 +392,14 @@ export function MapPage({ onBack }: MapPageProps) {
         console.error("Map init error:", e);
       }
     };
-    if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-      const raf = requestAnimationFrame(initMap);
-      return () => cancelAnimationFrame(raf);
+    
+    if (!mapReady) {
+      if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+        const raf = requestAnimationFrame(initMap);
+        return () => cancelAnimationFrame(raf);
+      }
+      initMap();
     }
-    initMap();
   }, [scriptLoaded, mapReady]);
 
   useEffect(() => {
@@ -399,8 +412,28 @@ export function MapPage({ onBack }: MapPageProps) {
       const icon = new T.Icon.Default();
       const marker = new T.Marker(lnglat, { icon });
       marker.addEventListener("click", () => {
-        setSelectedPoint(point);
-        mapRef.current.panTo(lnglat);
+        const match = POSTS.find((pp) => pp.lng === point.lng && pp.lat === point.lat);
+        if (match) {
+          setDetailPost(match);
+        } else {
+          const poiPost: typeof POSTS[0] = {
+            id: 100 + point.id,
+            title: point.label,
+            type: point.type as any,
+            user: { name: point.user, avatar: TYPE_EMOJIS[point.type], tag: point.tag, location: point.label },
+            content: `${point.label}，由${point.user}主理。${point.tag}，距离${point.distance}。欢迎前来体验！`,
+            img: "",
+            tags: [TYPE_LABELS[point.type] || "活动", point.tag],
+            likes: 50 + point.id * 7,
+            comments: 10 + point.id * 3,
+            bookmarks: 20 + point.id * 5,
+            time: "1d前",
+            isActivity: point.type === "activity",
+            lng: point.lng,
+            lat: point.lat,
+          };
+          setDetailPost(poiPost);
+        }
       });
       mapRef.current.addOverLay(marker);
       markersRef.current.push(marker);
@@ -426,7 +459,13 @@ export function MapPage({ onBack }: MapPageProps) {
     return (
       <div className="flex flex-col h-full bg-ds-bg pb-16">
         <div className="relative">
-          <img src={p.img} alt="" className="w-full h-56 object-cover" />
+          {p.img ? (
+            <img src={p.img} alt="" className="w-full h-56 object-cover" />
+          ) : (
+            <div className="w-full h-56 flex items-center justify-center" style={{ background: TYPE_COLORS[p.type] || TYPE_COLORS.activity }}>
+              <span className="text-6xl">{TYPE_EMOJIS[p.type] || "📍"}</span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
           <button onClick={() => setDetailPost(null)} className="absolute top-8 left-4 w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
             <ChevronLeft size={20} className="text-white" />
@@ -562,23 +601,22 @@ export function MapPage({ onBack }: MapPageProps) {
   if (showFeed) {
     return (
       <div className="flex flex-col h-full bg-ds-bg pb-16">
-        <div className="bg-ds-surface px-4 pt-8 pb-3 shadow-ds-soft flex-shrink-0">
-          <div className="flex items-center justify-between mb-2">
-            <h1 className="font-bold text-lg text-ds-text">探索·内容</h1>
+        <div className="bg-ds-surface px-4 pt-3 pb-3 shadow-ds-soft flex-shrink-0">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 bg-ds-chip rounded-ds-lg px-3 h-9 flex-1">
+              <Search size={14} className="text-ds-text-subtle shrink-0" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索内容、标签、活动..." className="flex-1 bg-transparent outline-none text-sm text-ds-text placeholder:text-ds-text-subtle" />
+            </div>
             <button
               onClick={() => { setShowFeed(false); setMapReady(false); mapRef.current = null; }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-white shadow-md text-gray-600"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-white shadow-md text-gray-600 shrink-0"
             >
               <Map size={14} />按地图探索
             </button>
           </div>
-          <div className="flex items-center gap-2 bg-ds-chip rounded-ds-lg px-3 h-9 mb-2">
-            <Search size={14} className="text-ds-text-subtle shrink-0" />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索内容、标签、活动..." className="flex-1 bg-transparent outline-none text-sm text-ds-text placeholder:text-ds-text-subtle" />
-          </div>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none" style={{ scrollbarWidth: "none" }}>
             {TAGS.map((tag) => (
-              <button key={tag} onClick={() => setActiveTag(tag)}
+              <button key={tag} onClick={() => { setActiveTag(tag); setCurrentPage(1); }}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${activeTag === tag ? "bg-ds-brand text-white" : "bg-ds-chip text-ds-text-muted"}`}
               >{tag}</button>
             ))}
@@ -587,36 +625,67 @@ export function MapPage({ onBack }: MapPageProps) {
         <div className="flex-1 overflow-y-auto pb-24 px-3 pt-3 flex flex-col gap-3">
           {filteredPosts.map((post) => (
             <div key={post.id} className="bg-ds-surface rounded-ds-xl overflow-hidden shadow-ds-soft cursor-pointer active:scale-[0.98] transition-transform" onClick={() => setDetailPost(post)}>
-              <div className="flex items-center gap-3 p-3">
-                <div className="w-14 h-14 rounded-ds-lg overflow-hidden shrink-0" style={{ background: (TYPE_COLORS[post.type] || TYPE_COLORS.activity) + "20" }}>
-                  <img src={TYPE_ICONS[post.type] || TYPE_ICONS.activity} alt="" className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+              <div className="flex flex-col p-4 gap-3">
+                <div className="flex gap-3">
+                  <div className="w-16 h-16 rounded-ds-lg overflow-hidden shrink-0" style={{ background: (TYPE_COLORS[post.type] || TYPE_COLORS.activity) + "20" }}>
+                    <img src={TYPE_ICONS[post.type] || TYPE_ICONS.activity} alt="" className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold text-sm text-ds-text flex-1">{post.title}</span>
+                      {post.isActivity && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-ds-brand text-white">招募</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0 text-white" style={{ background: TYPE_COLORS[post.type] || TYPE_COLORS.activity }}>
+                        {TYPE_LABELS[post.type] || "活动"}
+                      </span>
+                      <span className="text-xs text-ds-text-subtle truncate">{post.user.name}·{post.user.location}</span>
+                      <span className="text-xs text-ds-text-subtle shrink-0">{post.time}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-ds-text-subtle">
+                      <span className="flex items-center gap-0.5"><Heart size={12} />{post.likes}</span>
+                      <span className="flex items-center gap-0.5"><MessageSquare size={12} />{post.comments}</span>
+                      <span className="flex items-center gap-0.5"><Bookmark size={12} />{post.bookmarks}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm text-ds-text truncate">{post.title}</span>
-                    {post.isActivity && (
-                      <span className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold bg-ds-brand text-white">招募</span>
-                    )}
+                <p className="text-xs text-ds-text-muted leading-relaxed line-clamp-3">{post.content}</p>
+                {post.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {post.tags.map((tag) => (
+                      <span key={tag} className="px-2 py-0.5 rounded-full text-[10px] bg-ds-brand/15 text-ds-brand-dark">#{tag}</span>
+                    ))}
                   </div>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="text-xs px-1.5 py-0.5 rounded-full shrink-0 text-white" style={{ background: TYPE_COLORS[post.type] || TYPE_COLORS.activity }}>
-                      {TYPE_LABELS[post.type] || "活动"}
-                    </span>
-                    <span className="text-xs text-ds-text-subtle truncate">{post.user.name}·{post.user.location}</span>
-                    <span className="text-xs text-ds-text-subtle shrink-0">{post.time}</span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-ds-text-subtle">
-                    <span className="flex items-center gap-0.5"><Heart size={11} />{post.likes}</span>
-                    <span className="flex items-center gap-0.5"><MessageSquare size={11} />{post.comments}</span>
-                    <span className="flex items-center gap-0.5"><Bookmark size={11} />{post.bookmarks}</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           ))}
+          {activeTag !== "推荐" && totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 py-3">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-ds-chip text-ds-text-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft size={14} />上一页
+              </button>
+              <span className="text-xs text-ds-text-subtle">{currentPage}/{totalPages}</span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-ds-chip text-ds-text-muted disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                下一页<ChevronRight size={14} />
+              </button>
+            </div>
+          )}
           <div className="text-center py-4">
-            <span className="text-xs text-ds-text-subtle">— 已展示全部内容 —</span>
+            <span className="text-xs text-ds-text-subtle">
+              {activeTag === "推荐" ? "— 为你精选推荐 —" : `— 第${currentPage}页/共${totalPages}页 · ${allFilteredPosts.length}条 —`}
+            </span>
           </div>
         </div>
       </div>
@@ -625,24 +694,15 @@ export function MapPage({ onBack }: MapPageProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden pb-16 relative z-0">
-      <div className="bg-white px-4 pt-8 pb-3 shadow-ds-soft flex-shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="font-bold text-xl text-ds-text">探索</h1>
-          <button onClick={() => setShowFeed(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-ds-chip text-gray-600 hover:bg-gray-200">
+      <div className="bg-white px-4 pt-3 pb-2 shadow-ds-soft flex-shrink-0">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 bg-ds-chip rounded-ds-lg px-3 h-9 flex-1">
+            <Search size={14} className="text-ds-text-subtle shrink-0" />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索地点、活动、民宿..." className="flex-1 bg-transparent outline-none text-sm text-ds-text placeholder:text-ds-text-subtle" />
+          </div>
+          <button onClick={() => setShowFeed(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-ds-chip text-gray-600 hover:bg-gray-200 shrink-0">
             <List size={13} />按列表探索
           </button>
-        </div>
-        <div className="flex items-center gap-2 bg-ds-chip rounded-ds-lg px-3 h-9 mb-2">
-          <Search size={14} className="text-ds-text-subtle shrink-0" />
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索地点、活动、民宿..." className="flex-1 bg-transparent outline-none text-sm text-ds-text placeholder:text-ds-text-subtle" />
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-ds-text-subtle">
-          <MapPin size={12} /><span>全国</span>
-          {onBack && (
-            <button onClick={onBack} className="ml-auto w-7 h-7 rounded-full bg-ds-chip flex items-center justify-center">
-              <Navigation size={14} />
-            </button>
-          )}
         </div>
       </div>
       <div className="flex items-center gap-2 px-4 py-2 bg-white overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: "none" }}>
