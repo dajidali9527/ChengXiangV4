@@ -8,6 +8,8 @@ interface BottomNavProps {
   onPublish: () => void;
 }
 
+const ACTIVE = "#e9846a";
+
 export function BottomNav({ current, onChange, onPublish }: BottomNavProps) {
   const leftItems = [
     { key: "discover" as Page, icon: Compass, label: "首页" },
@@ -34,10 +36,12 @@ export function BottomNav({ current, onChange, onPublish }: BottomNavProps) {
             <Icon
               size={22}
               strokeWidth={current === key ? 2.5 : 1.8}
-              className={current === key ? "text-ds-brand" : "text-ds-text-subtle"}
+              style={{ color: current === key ? ACTIVE : undefined }}
+              className={current === key ? "" : "text-ds-text-subtle"}
             />
             <span
-              className={`text-[10px] leading-none ${current === key ? "text-ds-brand font-semibold" : "text-ds-text-subtle"}`}
+              className={`text-[10px] leading-none ${current === key ? "font-semibold" : "text-ds-text-subtle"}`}
+              style={current === key ? { color: ACTIVE } : undefined}
             >
               {label}
             </span>
@@ -46,7 +50,8 @@ export function BottomNav({ current, onChange, onPublish }: BottomNavProps) {
 
         <button
           onClick={onPublish}
-          className="absolute left-1/2 flex h-9 w-20 -translate-x-1/2 -translate-y-[calc(50%+24px)] items-center justify-center gap-1.5 rounded-[30px] bg-ds-brand text-white shadow-ds-floating text-sm font-bold"
+          className="absolute left-1/2 flex h-9 w-20 -translate-x-1/2 -translate-y-[calc(50%+24px)] items-center justify-center gap-1.5 rounded-[30px] text-white shadow-ds-floating text-sm font-bold"
+          style={{ background: ACTIVE }}
         >
           <Plus size={18} strokeWidth={3} />
           <span className="text-xs">发布</span>
@@ -61,10 +66,12 @@ export function BottomNav({ current, onChange, onPublish }: BottomNavProps) {
             <Icon
               size={22}
               strokeWidth={current === key ? 2.5 : 1.8}
-              className={current === key ? "text-ds-brand" : "text-ds-text-subtle"}
+              style={{ color: current === key ? ACTIVE : undefined }}
+              className={current === key ? "" : "text-ds-text-subtle"}
             />
             <span
-              className={`text-[10px] leading-none ${current === key ? "text-ds-brand font-semibold" : "text-ds-text-subtle"}`}
+              className={`text-[10px] leading-none ${current === key ? "font-semibold" : "text-ds-text-subtle"}`}
+              style={current === key ? { color: ACTIVE } : undefined}
             >
               {label}
             </span>

@@ -107,3 +107,15 @@ App.tsx                       — 根组件，路由与底部导航
 - 阴影统一使用 `shadow-ds-soft` 或 `shadow-ds-floating`
 - Tailwind CSS v4 使用 `@theme inline` 进行 CSS 层配置（无 `tailwind.config.js`）
 - 全局状态通过 React Context (`store/AppContext.tsx`) 管理，使用 `useApp()` hook 访问
+
+## 更新记录
+
+### 2026-05-24
+- 注册页面第一步新增"AI帮我生成新形象"按钮
+- 按钮位于形象选择网格下方，点击后AI会随机选择一个形象并自动选中
+- 带有Sparkles图标和加载动画效果
+- 修复登录后跳转错误：从设置页退出登录后重新登录，会误跳到设置页
+- 修复方案：在 App.tsx 中添加 useEffect 监听 currentUser 变化，登录时自动重置 subPage/mainTab 等导航状态到初始值，确保跳转到首页
+- 登录页新增多国语言支持（简体中文 / 繁體中文 / English）
+- 点击右下角 🌐 地球图标弹出语言选择菜单，选中项带有 ✓ 标记
+- 选择后语言偏好自动保存至 localStorage，刷新后保留

@@ -114,6 +114,22 @@ export function RegisterPage({ onComplete, onBack }: RegisterPageProps) {
                 </button>
               ))}
             </div>
+            <button
+              onClick={() => {
+                setAiGenerating(true);
+                setTimeout(() => {
+                  const randomId = Math.floor(Math.random() * DEMO_USERS.length) + 1;
+                  setSelectedId(randomId);
+                  setAiGenerating(false);
+                }, 1000);
+              }}
+              disabled={aiGenerating}
+              className="mt-6 w-full h-12 rounded-ds-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+              style={{ background: "#e9846a", color: "white" }}
+            >
+              <Sparkles size={18} className={aiGenerating ? "animate-spin" : ""} />
+              {aiGenerating ? "AI生成中..." : "AI帮我生成新形象"}
+            </button>
           </div>
         )}
 

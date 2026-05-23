@@ -165,25 +165,6 @@ export function MyPage({ onTagsOpen, onAvatarOpen, onSettingsOpen, onPointsOpen 
         ))}
       </div>
 
-      <div className="px-4 mt-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-ds-lg border border-amber-200 overflow-hidden">
-        <button
-          onClick={onPointsOpen}
-          className="w-full flex items-center gap-3 px-4 py-4 active:bg-amber-100"
-        >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-            <Gift size={24} className="text-white" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-semibold text-ds-text">我的积分</p>
-            <p className="text-lg font-bold text-orange-600 mt-1">340 <span className="text-xs font-normal text-orange-400">积分</span></p>
-          </div>
-          <div className="flex items-center gap-1 px-4 py-2 bg-orange-500 rounded-full text-white text-xs font-semibold">
-            去兑换
-            <ChevronRight size={14} />
-          </div>
-        </button>
-      </div>
-
       <div className="px-4 mt-4">
         <div className="flex bg-ds-chip rounded-ds-lg p-1 gap-1 mb-4">
           {(["posts", "likes", "saves"] as const).map((tab) => (

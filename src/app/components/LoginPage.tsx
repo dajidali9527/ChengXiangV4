@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Phone, Mail, ChevronRight, Eye, EyeOff, LogIn, ChevronDown } from "lucide-react";
+import { Phone, Mail, ChevronRight, Eye, EyeOff, LogIn, ChevronDown, Globe, Check } from "lucide-react";
 import { useApp } from "../store/AppContext";
 import { DEMO_USERS } from "../data/users";
+import { useI18n } from "../store/I18nContext";
+import { LOCALE_LABELS, type Locale } from "../../i18n/translations";
 
 interface LoginPageProps {
   onSuccess: () => void;
@@ -10,13 +12,16 @@ interface LoginPageProps {
 
 export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
   const { login } = useApp();
+  const { t, locale, setLocale } = useI18n();
   const [mode, setMode] = useState<"phone" | "email">("phone");
   const [showPwd, setShowPwd] = useState(false);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showDemoDropdown, setShowDemoDropdown] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
 
   const handleLogin = () => {
     const foundUser = DEMO_USERS.find((u) => u.password === password && (mode === "phone" ? phone.length > 0 : email.length > 0));
@@ -36,6 +41,17 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [showDemoDropdown]);
+
+  useEffect(() => {
+    if (!showLangMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setShowLangMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [showLangMenu]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#f4f0ea" }}>
@@ -59,7 +75,7 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
                   : "text-ds-text-subtle border-b-2 border-transparent"
               }`}
             >
-              {m === "phone" ? "手机号登录" : "邮箱登录"}
+              {m === "phone" ? t("login.phone") : t("login.email")}
             </button>
           ))}
         </div>
@@ -73,7 +89,7 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
                 <input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="请输入手机号"
+                  placeholder={t("login.phone_placeholder")}
                   className="flex-1 bg-transparent outline-none text-sm text-ds-text"
                 />
                 <button
@@ -113,7 +129,7 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
               <input
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="请输入邮箱"
+                placeholder={t("login.email_placeholder")}
                 className="flex-1 bg-transparent outline-none text-sm text-ds-text"
               />
             </div>
@@ -126,7 +142,7 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
               type={showPwd ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="演示账号密码: 123"
+              placeholder={t("login.password_placeholder")}
               className="flex-1 bg-transparent outline-none text-sm text-ds-text"
             />
           </div>
@@ -138,32 +154,54 @@ export function LoginPage({ onSuccess, onRegister }: LoginPageProps) {
           style={{ background: "white", color: "#e9846a" }}
         >
           <LogIn size={18} />
-          进村
+          {t("login.submit")}
         </button>
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px bg-ds-border" />
-          <span className="text-ds-text-subtle text-xs">第三方登录</span>
+          <span className="text-ds-text-subtle text-xs">{t("login.third_party")}</span>
           <div className="flex-1 h-px bg-ds-border" />
         </div>
 
         <div className="flex justify-center gap-5">
-          {["微信", "小红书", "抖音"].map((label) => (
+          {["login.wechat", "login.xiaohongshu", "login.douyin"].map((key) => (
             <button
-              key={label}
+              key={key}
               onClick={() => {}}
               className="text-sm text-ds-text-subtle hover:text-ds-text transition-colors"
             >
-              {label}
+              {t(key)}
             </button>
           ))}
         </div>
 
-        <div className="flex justify-center items-center gap-1 mt-1">
-          <span className="text-ds-text-subtle text-sm">还没有账号？</span>
+        <div className="flex justify-center items-center gap-1 mt-1 relative">
+          <span className="text-ds-text-subtle text-sm">{t("login.no_account")}</span>
           <button onClick={onRegister} className="text-sm font-semibold flex items-center gap-0.5" style={{ color: "#e9846a" }}>
-            立即注册 <ChevronRight size={14} />
+            {t("login.register")} <ChevronRight size={14} />
           </button>
+          <div ref={langMenuRef} className="absolute right-0 top-1/2 -translate-y-1/2">
+            <button
+              onClick={() => setShowLangMenu(!showLangMenu)}
+              className="w-8 h-8 rounded-full flex items-center justify-center transition-all hover:bg-black/5"
+            >
+              <Globe size={18} className="text-ds-text-subtle" />
+            </button>
+            {showLangMenu && (
+              <div className="absolute bottom-full right-0 mb-2 bg-white rounded-ds-lg shadow-xl border border-ds-border py-1 min-w-[120px]">
+                {(["zh-CN", "zh-TW", "en"] as Locale[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => { setLocale(l); setShowLangMenu(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-ds-text hover:bg-ds-chip transition-all"
+                  >
+                    <span className="flex-1 text-left">{LOCALE_LABELS[l]}</span>
+                    {locale === l && <Check size={14} className="text-ds-text-subtle" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

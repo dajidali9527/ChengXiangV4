@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./store/AppContext";
+import { I18nProvider } from "./store/I18nContext";
 import { BottomNav } from "./components/BottomNav";
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
@@ -36,6 +37,15 @@ function MainApp() {
   const [hideBottomNav, setHideBottomNav] = useState(false);
 
   const goBack = () => setSubPage("none");
+
+  useEffect(() => {
+    if (currentUser) {
+      setSubPage("none");
+      setMainTab("discover");
+      setShowPublish(false);
+      setHideBottomNav(false);
+    }
+  }, [currentUser]);
 
   if (!currentUser) {
     if (authPage === "login") {
@@ -116,8 +126,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <MainApp />
-    </AppProvider>
+    <I18nProvider>
+      <AppProvider>
+        <MainApp />
+      </AppProvider>
+    </I18nProvider>
   );
 }
